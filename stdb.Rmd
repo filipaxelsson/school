@@ -1,0 +1,327 @@
+---
+title: All onödig fakta kring Game of Thrones!
+author: Filip Axelsson (@filipaxelsson)
+date: 2020-01-15
+output:
+  html_document:
+    self_contained: true
+    toc: true
+    toc_depth: 2
+---
+```{r, message=F, echo=FALSE}
+library(purrr)
+library(tidyverse)
+library(httr)
+library(jsonlite)
+library(purrr)
+library(dplyr)
+library(cowplot)
+library(scales)
+```
+
+# Introduktion
+De flesta av oss har följt Game of Thrones slaviskt oavsett om det är böckerna eller om det är tv-serien. Så fort man har blivit fäst vid en huvudkaraktär så dödar dom personen och detta uppreppas flera gånger. I detta projekt kommer jag ge dig som läsare all onödig iformation du behöver om Game of Thrones, det kan vara allt ifrån vad är livslängden för respektive hus, hur många karaktärer finns det endast i böckerna och endast i serien, hur ser fördelningen ut i kön, vilket hus är störst, vilket hus har det dött flest personer i, och mycket mer onödig information. Men som man brukar säga "kunskap är inte tungt bära med sig" och vem vet kanske kommer du få en miljonkronorsfråga om just detta.
+
+# Data
+Det finns säkert flera olika sätt att få tillång till information kring Game of Thrones, jag har dock valt mig att anänvda en API,"https://anapioficeandfire.com". Jag kommer utgå ifrån att denna API har korrekt information till de säsonger och böcker som finns listade. API:n är uppbyggd på följande sätt, du hämtar hem data för böckerna genom en url-länk till exempel för första boken, "https://anapioficeandfire.com/api/books/1", detta generar en massa olika variabler, bland annat en variabel "character" som i sin tur består av flera url-länkar, se "Tabell 1". Genom att använda respektive url-länk i "characters" kan ytterliggare information hämtas hem, men om ytterliggare information behövs som till exempel vilket hus karaktären tillhörde så måste ännu en url-länk till API:n användas. Denna princip följer genom hela API:n. 
+
+```{r,echo=FALSE,message=F}
+GET("https://anapioficeandfire.com/api/books/1") %>% 
+  httr::content("text") %>%
+    fromJSON() %>% 
+    .$characters %>% 
+    head(5) %>% 
+    knitr::kable(
+      col.names = "characters",
+      caption = "Tabell 1: Exempel på struktur för variabeln \"characters\""
+    )
+
+```
+Genom att skapa en funktion som läser in alla url-länkar går det smidagare att läsa in all data. Ett annat problem som uppstod är att vissa variabler innehåller text, så för att få ut den sökta informationen skapades även här en funktion som tog ut den sökta informationen och transformerade den. Ett exmpel på en sådan variabel är "born", det vill säga när karaktären är född. Denna variabel består med en massa text följd med ett årtal där "AC" eller "BC" står efter. Jag skapade en funktion som tog ut den sökta infrormationen i "born", det vill säga årtalet och om det stod "AC" så tas endast året ut, står det dock "BC" läggs ett minustecken till före, detta görs även för variabeln "dead". Jag gör detta eftersom vi då kan ta absolutbeloppet av "dead - born" för att få ut åldern på karaktären. Vi ska även notera att i denna datamängd/API finns det 10 stycken olika böcker samt 6 säsonger av tv-serien. 
+
+```{r, cache= TRUE, echo= FALSE, message=F}
+###### FUNKTIONER SOM ANVÄNDS FÖR ATT HÄMTA UT DATA #####
+
+### Tar ut informationen från URL-länkarna.
+extract_information <- function(ID){
+  info <- GET(as.character(ID)) %>% 
+   httr::content("text") %>%
+    fromJSON()
+  return(info)
+}
+
+
+# Tar ut den sökta informationen och gör om strängarna.
+modify_born_died <- function(string){
+  modified_list <- string %>%
+    as_tibble() %>% 
+    mutate(value = str_extract(value, pattern = "\\b(\\d+ AC|\\d+ BC)\\b"),
+           value = ifelse(str_detect(value, pattern = "AC"), str_remove(value,"AC"), paste0("-", value)),
+           value = str_remove(value, "BC"))
+    return(as.numeric(modified_list))
+}
+
+
+max_min_age <- function(x){
+  if(x == "max"){
+  max <- GoT_df_age %>% 
+    ungroup() %>% 
+    filter(age == max(age)) %>% 
+    mutate(text = paste0(name...13, ": ", age)) %>%
+    filter(row_number() == 1) %>% 
+    select(text)
+    
+  return(max)
+  }
+  if(x == "min"){
+     min <- GoT_df_age %>% 
+       ungroup() %>% 
+       filter(age == min(age)) %>% 
+       mutate(text = paste0(name...13, ": ", age)) %>% 
+       filter(row_number() == 1) %>% 
+       select(text)
+     return(min)
+  }
+}
+
+
+```
+
+```{r, cache = TRUE, echo= FALSE, message=F}
+
+### HÄMTAR IN ALL DATA ####
+
+
+
+# Läser in alla böcker
+
+ GoT1<- GET("https://anapioficeandfire.com/api/books") %>%
+    httr::content("text") %>%
+    fromJSON() %>% 
+    tidyr::unnest(characters)
+
+
+  
+# Läser in alla böckers information.
+GoT_df1 <- GoT1 %>%
+  mutate(info = map(characters,extract_information)) %>% 
+  unnest_auto(info) %>% 
+  unnest(tvSeries) %>% 
+  unnest(allegiances) %>% 
+  mutate(info_house = map(allegiances,extract_information)) %>% 
+  unnest_auto(col = info_house)
+```
+
+# Analys av data
+
+## Förväntad "tid" i rampljuset för en karaktär
+Genom att analysera "Figur 1" och "Figur 2" som visar hur många böcker respektive säsonger av tv-serien en karaktär är med i. Det går att dra en slutsats att antalet böcker och säsonger verkar vara exponentialfördelad. Vi kan utifrån detta se att det är väldigt få karaktärer som är med i alla säsonger i tv-serien, till exmepl är "Jon Snow" en utav karaktärerna som är med i alla 6 säsonger. Om vi iställer riktar fokus till böckerna så ser vi att ingen utav karaktärerna finns med i alla 10 böcker, den är även väldigt få som finns med i bara 6 stycken, det är färre än vad det var för tv-serien, dock den som har varit med i flest böcker är "Rhaenys Targaryen" som har varit med i 7 böcker.
+
+Utifrån "Figur 3" och "Figur 4" kan slutsatsen att det är betydligt mer vanligt med manliga karaktärer än kvinliga. Det går dock att se en växande trend för kvinliga karaktärer i tv-serien, medan i böckererna verkar antalet kvinliga och manliga karaktärer svänga mer frekvent. Utifrån dessa figurer kan även slutsatsen att antalet karaktärer i tv-serien är betydligt färre än i böckerna.
+
+
+```{r, cache= TRUE, echo= FALSE, message=F}
+### Hur många karaktärer är med i alla 6 säsonger?, fördeling över detta.
+plot1 <- GoT_df1 %>% 
+  group_by(name...13) %>% 
+  filter(tvSeries != "") %>%
+  distinct(tvSeries) %>% 
+  dplyr::summarise(total_season = n()) %>% 
+  arrange(desc(total_season)) %>% 
+  ggplot(aes(x = total_season)) +
+  geom_histogram(aes(y = ..density..), col = "black", fill = "white") +
+  geom_density(alpha = .2, fill = "#FF6666") +
+  annotate(
+    geom = "curve", x = 5.7, y = 1.1, xend = 6 + 0.01, yend = 0.7,
+    curvature = -.2, arrow = arrow(length = unit(2, "mm"))
+  ) +
+   annotate(geom = "text", x = 5, y = 1.2, label = "Jon Snow", hjust = "left") +
+  labs(x = "Antal säsonger", y = "Täthet") +
+  ggtitle("Figur 1: Fördelning för antal säsonger") +
+  theme(plot.title = element_text(size = 13)) # Eftersom inte hela texten syntes så minskade jag storleken
+
+## Fördelning över hur många böcker en karaktär är med i
+plot2 <-  GoT_df1 %>% 
+  group_by(name...13) %>%
+  distinct(name...2) %>% 
+  dplyr::summarise(total_books = n()) %>% 
+  arrange(desc(total_books)) %>% 
+  ggplot(aes(x = total_books)) +
+  annotate(
+    geom = "curve", x = 6.7, y = 0.3, xend = 7 + 0.01, yend = 0.1,
+    curvature = -.2, arrow = arrow(length = unit(2, "mm"))
+  ) +
+  annotate(geom = "text", x = 5.7, y = 0.45, label = "Rhaenys\nTargaryen", hjust = "left") +
+  geom_histogram(aes(y = ..density..), col = "black", fill = "white") +
+  geom_density(alpha = .2, fill = "#FF6666") +
+  labs(x = "Antal böcker", y = "Täthet") +
+  ggtitle("Figur 2: Fördelning för antal böcker") +
+  theme(plot.title = element_text(size = 13))
+  
+  plot_grid(plot1,plot2) # plottar side-by-side
+```
+
+
+
+```{r, cache= TRUE, echo= FALSE, message=F}
+# Antalet män och kvinnor under respektive tv säsong
+plot3 <- GoT_df1 %>% 
+  group_by(tvSeries) %>% 
+  distinct(characters,gender) %>% 
+  count(gender) %>% 
+  filter(tvSeries != "") %>% 
+  mutate(tvSeries = str_remove(tvSeries, "Season "),
+         tvSeries = as.numeric(tvSeries)) %>% 
+  ggplot(aes(x = tvSeries, y = n, color = gender)) +
+  scale_color_discrete(name = "Kön", labels = c("Kvinna", "Man")) +
+  ggtitle("Figur 3: Antalet män och kvinnor under respektive säsong") +
+  theme(plot.title = element_text(size = 8)) +
+  labs(x = "Säsong", y = "Antal") +
+  geom_line() +
+  scale_fill_discrete(name = "Kön", labels = c("Kvinna", "Man"))
+
+
+# Antalet män och kvinnor under respektive bok
+plot4 <- GoT_df1 %>% 
+  group_by(url...1) %>% 
+  distinct(characters,gender) %>% 
+  count(gender) %>% 
+   mutate(url...1 = str_remove(url...1, "https://anapioficeandfire.com/api/books/"),
+         url...1 = as.numeric(url...1)) %>%
+  ggplot(aes(x = url...1, y = n, color = gender)) +
+  scale_color_discrete(name = "Kön", labels = c("Kvinna", "Man")) +
+  ggtitle("Figur 4: Antalet män och kvinnor under respektive bok") +
+  theme(plot.title = element_text(size = 8)) +
+  labs(x = "Bok", y = "Antal") +
+  scale_x_continuous(breaks = pretty_breaks()) +
+  geom_line() 
+  
+
+plot_grid(plot3,plot4)
+```
+
+
+## Vad är egentligen sannolikheten att man dör?
+Det finns 1313 stycken unika karaktärer från alla dessa 10 böcker. I "Tabell 2" visas antalet som har dött, det vill säga utifrån alla dessa karaktärer har cirka 25% dött vilket motsvarar 331 stycken. Det går även att se att utifrån cirka 86.4% utav antalet döda var män och 14.6% var kvinnor. Detta kan ha varit en orsak till att kvinnor har haft en mer stabil kurva som kunde analyseras i "Figur 3" och "Figur 4".
+Det är värt att poängtera att denna infromation har tagits fram genom att endast tagit hänsyn till att information kring karaktärens död finns tillgänglig.
+
+Genom att studera "Figur 5" kan slutatsen att den förväntade åldern verkar ligga runt 25 år åldern, det finns dock vissa undantag för några karaktärer, vi ser till exempel att "Pycelle" är en utav de äldsta med en ålder på 84 år medan "Rhaego" inte hann fylla 1 år utan fick en livslängd på 0 år. Det kan även här vara värt att poängtera att dessa resultat har endast tagits fram utifrån de karaktärer som har haft både information angående födelsen samt deras död. Vi kan även utifrån denna graf tolka att livslängen verkar vara normalfördelad.
+
+
+```{r, cache= TRUE, echo= FALSE, message=F}
+GoT_df1 %>% 
+  distinct(characters,born,died,gender) %>% 
+  add_tally(name = "total_characters") %>% 
+  filter(died != "") %>% 
+  add_tally(name = "dead") %>% 
+  add_count(gender, name = "dead_gender") %>% 
+  mutate(prop_dead = dead/total_characters,
+         prop_gender = dead_gender/dead) %>% 
+  select(dead,prop_dead,prop_gender,gender) %>% 
+  distinct(dead,prop_dead,prop_gender,gender) %>% 
+  pivot_wider(names_from = gender, values_from = prop_gender) %>% 
+  knitr::kable(
+    col.names = c("Totalt antal döda"," Totalt procentuellt döda", "Procentuellt döda Kvinnor", "Procentuellt döda Män"),
+    caption = "Tabell 2: Andeln som har dött, totalt och för respektive kön"
+  )
+```
+
+
+```{r, cache= TRUE, echo= FALSE, message=F}
+# Skapar åldern för de karaktär som har den informationen.
+GoT_df_age <- GoT_df1 %>% 
+   mutate(born = map_dbl(born,modify_born_died),
+         died = map_dbl(died, modify_born_died),
+         age = abs(died - born)) %>% 
+  filter(born != is.na(born),
+         died != is.na(died)) %>% 
+  group_by(age) %>% 
+  distinct(characters,gender,name...29,name...13)
+
+
+GoT_df_age %>% 
+  ggplot(aes(x = age, fill = gender)) + 
+  annotate(
+    geom = "curve", x = 80, y = 10, xend = 84 + 0.01, yend = 5,
+    curvature = -.2, arrow = arrow(length = unit(2, "mm"))
+  ) +
+   annotate(geom = "text", x = 70, y = 11, label = max_min_age("max"), hjust = "left") +
+   annotate(
+    geom = "curve", x = 5, y = 10, xend = 0 + 0.01, yend = 5,
+    curvature = .2, arrow = arrow(length = unit(2, "mm"))
+  ) +
+   annotate(geom = "text", x = 5, y = 11, label = max_min_age("min"), hjust = "left") +
+  geom_histogram() +
+  labs(x = "Ålder", y = "Antal") +
+  ggtitle("Figur 5: Histogram över ålder") +
+  scale_fill_discrete(name = "Kön", labels = c("Kvinna", "Man"))
+```
+
+
+
+## Vilket hus skapa en allians med?
+Totalt finns det 292 olika hus, men vilket av dessa hus är egentligen bäst att bilda en alians med? I "Tabell 3" ser vi de 10 största husen som har flest medlemmar i Game of Thrones. Dock behöver inte alla inte alla medlemar vara vid liv, i "Tabell 4" ser vi att det ändå är relativt många medlemmar som har dött, det lägsta antalet döda är "House Tyrell of Highgarden" med endast 7% som har dött. De med flest döda är "House Targaryen of King’s Landing" med 55% döda. Om vi nu istället kollar på antalet levande medlemmar så är egentligen "House Tyrell of Highgarden" större än "House Targaryen of King’s Landing". Det finns även massor av hus som har dött ut, dessa är dock ointressante ty de endast bestod av ett fåtal medlemmer.
+I "Figur 6" ser vi ett histogram över de 4 största husen och ser att åldern för respektive hus är relativt jämt utspridd, dock kan det vara ett för få antal obseravtioner för att få en bra uppfattning. Det kan eventuellt vara en normalfördelning som visar sig för åldern i "House Targaryen of King’s Landing", men som tidigare nämt det är för få antal observationer för att säga med säkerhet att det är en normalfördelning. Då det inte fanns någon information tillgänglig om åldern för medlemmarna i "House Tyrell of Highgarden" så kunde inte detta hus inkluderas i histogrammet.
+
+```{r, cache= TRUE, echo= FALSE, message=F}
+### tabell över de 10 största husen.
+GoT_df1 %>% 
+  group_by(name...29) %>% 
+  distinct(characters) %>% 
+  tally() %>% 
+  arrange(desc(n)) %>% 
+  head(10) %>% 
+  knitr::kable(
+    col.names = c("Hus", "Antal medlemmar"),
+    caption = "Tabell 3: Top 10 största husen"
+  )
+
+
+GoT_df1 %>% 
+  group_by(name...29) %>% 
+  distinct(name...29,characters,died) %>% 
+  add_tally(name = "member") %>% 
+  filter(name...29 %in% c("House Frey of the Crossing","House Targaryen of King's Landing",
+                          "House Stark of Winterfell","House Lannister of Casterly Rock", "House Tyrell of Highgarden"),
+         died != "") %>% 
+  add_tally(name = "dead") %>% 
+  distinct(name...29,member,dead) %>% 
+  mutate(proc_dead = paste0(round(100*dead/member), "%"),
+         alive = member - dead) %>% 
+  select(name...29,member,alive,dead,proc_dead) %>% #Gör om i vilken ordningen för variablerna
+  arrange(desc(member)) %>% 
+   knitr::kable(
+    col.names = c("Hus", "Totalt antal medlemmar","Antal levande", "Antal döda", "Procentuelt antal döda"),
+    caption = "Tabell 4: Top 5 största husen och respektive dödsantal "
+  )
+
+```
+
+
+
+
+
+```{r, cache= TRUE, echo= FALSE, message=F}
+### ålder för de 4 största husen.
+  GoT_df_age %>% 
+     filter(name...29 %in% c("House Frey of the Crossing","House Targaryen of King's Landing",
+                          "House Stark of Winterfell","House Lannister of Casterly Rock")) %>% 
+    ggplot(aes(x = age, fill = gender)) +
+    geom_histogram() +
+    scale_fill_discrete(name = "Kön", labels = c("Kvinna", "Man")) +
+    facet_wrap(~name...29) +
+    labs(x = "Ålder", y = "Antal") +
+    ggtitle("Figur 6: Histogram över åldern för de 4 största husen")
+```
+
+
+# Diskussion/Resultat
+Då det egentligen inte finns något direkt resultat, då det inte finns någon tes utan detta projekt handlande endast om att förse läsaren med så mycket onödig information som möjligt angående Game of Thrones. Därav kommer detta stycke vara en blanding av diskuion och resultat.
+
+Om vi börjar med att diskutera API:n och hur informationen har tagits fram. Det optimalaste hade varit att endast tagit ut den sökta datamängden för varje moment, men på grund av att man måste kalla på API:n flera gånger gör att det kommer ta tid för varje delmängd att plockas ut, samt att det finns ett tak på hur många gånger API:n får användas per dag. Detta gjorde det enkelt att bestämma att läsa in all data som fanns tillgänglig på API:n och sedan arbeta utifrån den. Jag har även valt att helt och hållet lita på att informationen från API:n stämmer till 100%, detta behöver inte vara fallet, som exempel vet jag "Cersei Lannister" är död, dock har inte detta tagits med i API:n, en orsak kan vara att hon eventuellt dog senare än säsong 6 eller bok nummer 10, detta är något jag har kollat upp utan endast reflekterat över.  
+
+Jag kan även utifrån vad som har analyserats ovan även tycka att det mest optimala för att få mest rampljus vore att vara en kvinna i tv-serien ty det är fler män som är karaktärer vilket gör att om tiden i rampljuset skulle fördelas lika mellan män och kvinnor skulle kvinnor i snitt ha längre tid rampljuset än män då det är betyligt färre. Vi kan även se att kurvan för antalet kvinnor inte lika "ostabil" i antalet män i böckerna och i serien. Denna teori styrks även om vi lägger den informationen med att antalet som har dött genom alla böcker, och bortser att böckerna och serien är två olika "världar" så är det 86% av de döda män så därav är det också bäst att vara en kvinna. Om jag hade varit en kvinna i Game of Thrones hade det enligt "Figur 5" sett ut som att jag hade haft en kort livslängd, då det kan analyseras att fler män har längre livslängd än kvinnorna, detta kan dock påverkas av att antalet observationer för kvinnor är betyligt lägre på grund av antalet kvinliga karaktärer är redan så få från början. Huset som jag sedan skulle vilja tillhöra är "House Tyrell of Highgarden", detta på grund av de har det lägsta dödsantalet, dock finns ingen information kring livslängden för detta hus men om jag istället utgår ifrån "Figur 5" som visar livslängden utan hänsyn till vilket hus karaktärerna tillhör så är optimalast. Om hus hade valt efter "Figur 6" så hade jag tagit "House Targaryen of King’s Landing", även fast de har störst andel döda så har de mest information kring livslängeden för kvinnorna vilket gör att jag vet vilken förväntad livslängd jag har. Detta kan dock diskuteras om man hellre vill veta sin förväntade livslängd eller inte, det vill säga vill man veta när man ska dö eller inte. 
+
+Om vi ska sammanfatta allt, det finns säkert ett mer effektivare sätt att samla in datamängden från API:n men enligt min egna åsikt tyckte jag att detta var lättast. Jag har valt att förlita mig till 100% att informationen som API:n generar är helt korrekt. 
+Ett återkommamnde problem verkar även vara att observationerna verkar inte vara tillräckligt många för att kunna göra helt säkra slutsatser, till exempel är det väldigt få observationer kring kvinnors livslängd.
+Utifrån all information som har samlats in är det mest optimala för överleva och få mest rampljus i böckerna så som i serien är att vara en kvinna som tillhör huset "House Tyrell of Highgarden", detta på grund av att kvinnor har lägst andel döda i ett hus med de lägsta antalet döda. 

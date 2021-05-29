@@ -14,4 +14,5 @@ För att komma till laboration I: [Klicka här](https://github.com/filipaxelsson
 För att komma till laboration II: [Klicka här](https://github.com/filipaxelsson/school/blob/main/finans_2.pdf)
 
 ### Statistisk databehandling
-För att komma till mitt slutprojekt: [Klicka här](https://github.com/filipaxelsson/school/blob/main/stdb_report.pdf)
+För att komma till mitt slutprojekt (pdf): [Klicka här](https://github.com/filipaxelsson/school/blob/main/stdb_report.pdf)
+För att komma till mitt slutprojekt (kodning): [Klicka här](https://github.com/filipaxelsson/school/blob/main/stdb.Rmd)
