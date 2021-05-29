@@ -11,7 +11,7 @@ För att komma till projekt III: [Klicka här](https://github.com/filipaxelsson/
 ###  Finansmatematik
 För att komma till laboration I: [Klicka här](https://github.com/filipaxelsson/school/blob/main/finans_1.pdf)
 
-För att komma till laboration I: [Klicka här](https://github.com/filipaxelsson/school/blob/main/finans_2.pdf)
+För att komma till laboration II: [Klicka här](https://github.com/filipaxelsson/school/blob/main/finans_2.pdf)
 
 ### Statistisk databehandling
-För att komma till mitt slutprojekt: [Klicka här](https://github.com/filipaxelsson/school/blob/main/stdb_report.html)
+För att komma till mitt slutprojekt: [Klicka här](https://github.com/filipaxelsson/school/blob/main/stdb_report.pdf)
