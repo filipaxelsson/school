@@ -26,3 +26,8 @@ För att komma till projekt II: [Klicka här](https://github.com/filipaxelsson/s
 För att komma till projekt III: [Klicka här](https://github.com/filipaxelsson/school/blob/main/Statistisk%20inl%C3%A4rning/SL_3.pdf)
 
 För att komma till projekt IV: [Klicka här](https://github.com/filipaxelsson/school/blob/main/Statistisk%20inl%C3%A4rning/SL_4.pdf)
+
+### Examensarbete
+För att komma till mitt kandidatarbete "Har faktorer olika inverkan på bostadspriser i olika städer?": [Klicka här](https://github.com/filipaxelsson/school/blob/main/Examensarbete/2021_17_report.pdf)
+
+För att komma till mitt masterarbete "Premieskattning med hjälp av mer tolkningsbara trädbaserade metoder": [Klicka här](https://github.com/filipaxelsson/school/blob/main/Examensarbete/masteruppsats.pdf)
