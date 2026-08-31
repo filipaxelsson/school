@@ -14,9 +14,9 @@ För att komma till laboration I: [Klicka här](https://github.com/filipaxelsson
 För att komma till laboration II: [Klicka här](https://github.com/filipaxelsson/school/blob/main/Finansmatematik/finans_2.pdf)
 
 ### Grundläggande försäkringsmatematik
-För att komma till laboration I: [Klicka här](https://github.com/filipaxelsson/school/blob/main/Finansmatematik/finans_1.pdf)
+För att komma till laboration I: [Klicka här](https://github.com/filipaxelsson/school/blob/b5672efb34cd43849f185426059fe9fb6bbc9d4d/F%C3%B6rs%C3%A4kringsmatematik/Axelsson_Nyberg_Crompton_project1.pdf)
 
-För att komma till laboration II: [Klicka här](https://github.com/filipaxelsson/school/blob/main/Finansmatematik/finans_2.pdf)
+För att komma till laboration II: [Klicka här]([https://github.com/filipaxelsson/school/blob/main/Finansmatematik/finans_2.pdf](https://github.com/filipaxelsson/school/blob/b5672efb34cd43849f185426059fe9fb6bbc9d4d/F%C3%B6rs%C3%A4kringsmatematik/Axelsson_Nyberg_Crompton_project2.pdf))
 
 ### Statistisk databehandling
 För att komma till mitt slutprojekt (pdf): [Klicka här](https://github.com/filipaxelsson/school/blob/main/Statitistik%20databehandling/stdb_report.pdf)
