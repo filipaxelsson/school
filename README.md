@@ -17,7 +17,8 @@ För att komma till laboration II: [Klicka här](https://github.com/filipaxelsso
 För att komma till laboration I: [Klicka här](https://github.com/filipaxelsson/school/blob/b5672efb34cd43849f185426059fe9fb6bbc9d4d/F%C3%B6rs%C3%A4kringsmatematik/Axelsson_Nyberg_Crompton_project1.pdf)
 
 För att komma till laboration II: [Klicka här](https://github.com/filipaxelsson/school/blob/b5672efb34cd43849f185426059fe9fb6bbc9d4d/F%C3%B6rs%C3%A4kringsmatematik/Axelsson_Nyberg_Crompton_project2.pdf)
-
+### Livförsäkringsmatematik I
+För att komma till projekt I: [Klicka här](https://github.com/filipaxelsson/school/blob/6f67b1e826aeb70490a402ad041884d3d20a51a1/Liv%20I/project_1.pdf)
 ### Statistisk databehandling
 För att komma till mitt slutprojekt (pdf): [Klicka här](https://github.com/filipaxelsson/school/blob/main/Statitistik%20databehandling/stdb_report.pdf)
 
